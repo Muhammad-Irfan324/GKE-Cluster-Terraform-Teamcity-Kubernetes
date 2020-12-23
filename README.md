@@ -65,7 +65,7 @@
      - terraform apply
 <br>
 
-## Backend storage is bucket - state-storage-bucket-addoptify-terraform
+## Backend storage is bucket - bucket-addoptify-terraform
 
 ## Terraform Code Explanation
      - Custom VPC
