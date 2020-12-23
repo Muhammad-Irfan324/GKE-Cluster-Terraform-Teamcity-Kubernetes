@@ -1,0 +1,173 @@
+# AUTHOR - MUHAMMAD IRFAN TAHIR
+
+###PV Claim agent1
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: teamcity
+  name: agent1-volume
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+###PV Claim agent2
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: teamcity
+  name: agent2-volume
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+###PV Claim agent3
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: teamcity
+  name: agent3-volume
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+###Teamcity Agent 1
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  namespace: teamcity
+  name: teamcity-agent1
+  labels:
+    app: teamcity-agent1
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teamcity-agent1
+  template:
+    metadata:
+      labels:
+        app: teamcity-agent1
+    spec:
+      volumes:
+       - name: agent1-config-path
+         persistentVolumeClaim:
+           claimName: agent1-volume
+      containers:
+        - name: teamcity-agent1
+          image: jetbrains/teamcity-agent
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          volumeMounts:
+            - mountPath: /data/teamcity_agent/conf
+              name: agent1-config-path
+          env:
+            - name: SERVER_URL
+              value: teamcity-server:8111
+            - name: AGENT_NAME
+              value: AGENT-1
+            - name: DOCKER_IN_DOCKER
+              value: start
+---
+###Teamcity Agent 2
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  namespace: teamcity
+  name: teamcity-agent2
+  labels:
+    app: teamcity-agent2
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teamcity-agent2
+  template:
+    metadata:
+      labels:
+        app: teamcity-agent2
+    spec:
+      volumes:
+       - name: agent2-config-path
+         persistentVolumeClaim:
+           claimName: agent2-volume
+      containers:
+        - name: teamcity-agent2
+          image: jetbrains/teamcity-agent
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          volumeMounts:
+            - mountPath: /data/teamcity_agent/conf
+              name: agent2-config-path
+          env:
+            - name: SERVER_URL
+              value: teamcity-server:8111
+            - name: AGENT_NAME
+              value: AGENT-2
+            - name: DOCKER_IN_DOCKER
+              value: start
+---
+###Teamcity Agent 3
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  namespace: teamcity
+  name: teamcity-agent3
+  labels:
+    app: teamcity-agent3
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teamcity-agent3
+  template:
+    metadata:
+      labels:
+        app: teamcity-agent3
+    spec:
+      volumes:
+       - name: agent3-config-path
+         persistentVolumeClaim:
+           claimName: agent3-volume
+      containers:
+        - name: teamcity-agent3
+          image: jetbrains/teamcity-agent
+          securityContext:
+            runAsUser: 0
+            privileged: true
+          volumeMounts:
+            - mountPath: /data/teamcity_agent/conf
+              name: agent3-config-path
+          env:
+            - name: SERVER_URL
+              value: teamcity-server:8111
+            - name: AGENT_NAME
+              value: AGENT-3
+            - name: DOCKER_IN_DOCKER
+              value: start
+

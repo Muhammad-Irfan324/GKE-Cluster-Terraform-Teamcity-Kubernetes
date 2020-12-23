@@ -1,0 +1,158 @@
+# AUTHOR - MUHAMMAD IRFAN TAHIR
+
+###PV Claim data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: teamcity
+  name: data-volume
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+###PV Claim Logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: teamcity
+  name: log-volume
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+###PV Claim temp
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: teamcity
+  name: temp-volume
+  labels:
+    app: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+---
+
+# Deployment Definition
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: teamcity
+  name: teamcity-server
+  labels:
+    app: teamcity-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: teamcity-server
+  template:
+    metadata:
+      labels:
+        app: teamcity-server
+    spec:
+      volumes:
+        - name: data-dir-path
+          persistentVolumeClaim:
+            claimName: data-volume
+        - name: data-log-path
+          persistentVolumeClaim:
+            claimName: log-volume
+        - name: temp-path
+          persistentVolumeClaim:
+            claimName: temp-volume
+        #- name: dist-path
+         # persistentVolumeClaim:
+         #   claimName: dist-volume
+      containers:
+      - name: teamcity-server
+        image: jetbrains/teamcity-server:latest
+        securityContext:
+          runAsUser: 0
+          #privileged: true
+          #runAsUser: 1000
+        #command:
+        #  ["sh","-c","chown -R 1000:1000 /mnt/teamcity/data"]
+        ports:
+        - containerPort: 8111
+          protocol: TCP
+        volumeMounts:
+          - mountPath: /data/teamcity_server/datadir
+            name: data-dir-path
+          - mountPath: /opt/teamcity/logs
+            name: data-log-path
+          - mountPath: /opt/teamcity/temp
+            name: temp-path
+          #- mountPath: /opt/teamcity
+          #  name: dist-path
+        env:
+          - name: TEAMCITY_DATA_PATH
+            value: /data/teamcity_server/datadir
+          - name: TEAMCITY_SERVER_MEM_OPTS
+            value: -Xmx2g -XX:MaxPermSize=270m -XX:ReservedCodeCacheSize=350m
+          - name: TEAMCITY_LOGS
+            value: /opt/teamcity/logs
+          - name: CATALINA_TMPDIR
+            value: /opt/teamcity/temp
+          #- name: TEAMCITY_DIST
+          #  value: /opt/teamcity
+
+      #initContainers:
+      #  - name: fix-permission
+      #    image: busybox
+      #    command: ["sh","-c","chown -R 1000:1000 /mnt/teamcity/data"]
+      #    securityContext:
+      #      privileged: true
+      #    volumeMounts:
+      #      - name: data-dir-path
+      #        mountPath: /data/teamcity_server/datadir
+
+---
+#Service Definition
+apiVersion: v1
+
+kind: Service
+
+metadata:
+  name: teamcity-server
+  namespace: teamcity
+
+spec:
+  type: NodePort
+  ports:
+    - targetPort: 8111
+      protocol: TCP
+      port: 8111
+  selector:
+    app: teamcity-server
+---
+###Ingress
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: teamcity-ingress
+  namespace: teamcity
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: teamcitytest.cyberkidcloud.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: teamcity-server
+              servicePort: 8111
